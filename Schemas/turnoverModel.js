@@ -6,12 +6,17 @@ const turnoverSchema = new mongoose.Schema({
     required: true,
   },
   date: {
-    type: Date,
-    required: true,
-  },
-  user: {
     type: String,
     required: true,
+  },
+  username: {
+    type: String,
+    required: true,
+  },
+  unchanged: {
+    type: Boolean,
+    required: true,
+    default: true,
   },
 });
 

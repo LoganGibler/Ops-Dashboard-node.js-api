@@ -19,17 +19,37 @@ app.use(cors());
 const Users = require("./Schemas/userModel");
 const Turnover = require("./Schemas/turnoverModel");
 
-// verify login token, this should be called before any other route
-// app.post("/checkToken", (req, res) => {
-//   const { token } = ;
-//   jwt.verify(token, jwtsecret, (err, decoded) => {
-//     if (err) {
-//       res.status(401).json({ message: "Invalid token.", status: false });
-//     } else {
-//       res.status(200).json({ message: "Valid token.", status: true });
-//     }
-//   });
-// });
+// middleware
+async function authenticateToken(req, res, next) {
+  const token = req.headers["authorization"];
+  const username = req.body.username;
+  console.log(token);
+
+  if (token == null) {
+    return res.sendStatus(401);
+  }
+  console.log("parsed token: ", JSON.parse(token));
+  jwt.verify(JSON.parse(token), process.env.JWT_SECRET, async (err, user) => {
+    if (err) {
+      console.log(err);
+      return res.sendStatus(403);
+    }
+    req.user = user;
+    console.log("user:", user.username);
+    console.log("username:", username);
+    if (user.username !== username) {
+      return res.sendStatus(405);
+    }
+    next();
+  });
+}
+
+app.post("/protected", authenticateToken, async (req, res) => {
+  // This route is protected and can only be accessed by authenticated users.
+  res.send("You are authenticated");
+});
+
+// routes
 
 app.post("/register", async (req, res) => {
   try {
@@ -83,6 +103,30 @@ app.post("/login", async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "Login has failed." });
+  }
+});
+
+// content
+app.get("/turnover", authenticateToken, async (req, res) => {
+  try {
+    const turnover = await Turnover.find({});
+    res.status(200).json({ turnover });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post("/updateTurnover", authenticateToken, async (req, res) => {
+  try {
+    const { newTurnover, date, username } = req.body;
+    const update = { turnover: newTurnover, date: date, username: username };
+    const filter = { unchanged: true };
+    const updatedTurnover = await Turnover.updateOne(filter, update, {
+      upsert: true,
+    });
+    res.status(200).json({ message: "Turnover updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 
