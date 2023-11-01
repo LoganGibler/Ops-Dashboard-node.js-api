@@ -1,4 +1,4 @@
-const { Client } = require("pg");
+// const { Client } = require("pg");
 const express = require("express");
 const mongoose = require("mongoose");
 const app = express();
@@ -6,14 +6,14 @@ const cors = require("cors");
 require("dotenv").config();
 const jwtsecret = process.env.JWT_SECRET;
 const bcrypt = require("bcrypt");
-const client = new Client(process.env.DATABASE_URL);
+// const client = new Client(process.env.DATABASE_URL);
 const jwt = require("jsonwebtoken");
-const morgan = require("morgan");
+// const morgan = require("morgan");
 
 app.enable("trust proxy");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan("dev"));
+// app.use(morgan("dev"));
 app.use(cors());
 
 const Users = require("./Schemas/userModel");
@@ -23,7 +23,8 @@ const Turnover = require("./Schemas/turnoverModel");
 async function authenticateToken(req, res, next) {
   const token = req.headers["authorization"];
   const username = req.body.username;
-  console.log(token);
+  console.log("Token passed to backend for Auth:", token);
+  console.log("Username passed to backend for Auth:", username);
 
   if (token == null) {
     return res.sendStatus(401);
@@ -35,9 +36,9 @@ async function authenticateToken(req, res, next) {
       return res.sendStatus(403);
     }
     req.user = user;
-    console.log("user:", user.username);
-    console.log("username:", username);
-    if (user.username !== username) {
+    console.log("decoded token belongs to:", user.username);
+    console.log("username passed with request:", JSON.parse(username));
+    if (user.username !== JSON.parse(username)) {
       return res.sendStatus(405);
     }
     next();
@@ -107,7 +108,7 @@ app.post("/login", async (req, res) => {
 });
 
 // content
-app.get("/turnover", authenticateToken, async (req, res) => {
+app.post("/turnover", authenticateToken, async (req, res) => {
   try {
     const turnover = await Turnover.find({});
     res.status(200).json({ turnover });
@@ -124,14 +125,38 @@ app.post("/updateTurnover", authenticateToken, async (req, res) => {
     const updatedTurnover = await Turnover.updateOne(filter, update, {
       upsert: true,
     });
-    res.status(200).json({ message: "Turnover updated successfully" });
+    if (updatedTurnover) {
+      res.status(200).json({ message: "Turnover updated successfully" });
+    } else {
+      res.status(500).json({ message: "failed to update turnover." });
+    }
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 });
 
+app.post("/createTurnover", async (req, res) => {
+  try {
+    const { newData, date, username } = req.body;
+
+    const updatedData = await Turnover.create({
+      turnover: newData,
+      date: date,
+      username: username,
+      unchanged: true,
+    });
+
+    if (updatedData) {
+      res.status(200).json({ message: "new Turnover created successfully." });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "/createTurnover request has failed." });
+  }
+});
+// process.env.DATABASE_URL_QA
+// process.env.DATABASE_URL
 mongoose
-  .connect(process.env.DATABASE_URL)
+  .connect(process.env.DATABASE_URL_QA)
   .then(() => {
     app.listen(process.env.PORT || 8000, () => {
       console.log("connected to mongodb");
