@@ -156,7 +156,7 @@ app.post("/createTurnover", async (req, res) => {
 // process.env.DATABASE_URL_QA
 // process.env.DATABASE_URL
 mongoose
-  .connect(process.env.DATABASE_URL_QA)
+  .connect(process.env.DATABASE_URL)
   .then(() => {
     app.listen(process.env.PORT || 8000, () => {
       console.log("connected to mongodb");
