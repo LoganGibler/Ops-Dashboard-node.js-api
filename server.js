@@ -18,6 +18,7 @@ app.use(cors());
 
 const Users = require("./Schemas/userModel");
 const Turnover = require("./Schemas/turnoverModel");
+const Bulletin = require("./Schemas/bulletinModel");
 
 // middleware
 async function authenticateToken(req, res, next) {
@@ -108,6 +109,8 @@ app.post("/login", async (req, res) => {
 });
 
 // content
+
+// Turnover Querys
 app.post("/turnover", authenticateToken, async (req, res) => {
   try {
     const turnover = await Turnover.find({});
@@ -153,10 +156,45 @@ app.post("/createTurnover", async (req, res) => {
     res.status(500).json({ message: "/createTurnover request has failed." });
   }
 });
+
+// Bulletin querys
+
+app.post("/Bulletin", authenticateToken, async (req, res) => {
+  try {
+    // const { note, username, date } = req.body;
+
+    const bulletinBoard = await Bulletin.find({});
+    if (bulletinBoard) {
+      res.status(200).json({ bulletinBoard });
+    } else {
+      res.status(200).json({
+        message: "No notes were found on the bulletin board.",
+        empty: true,
+      });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "/bulletin request has failed." });
+  }
+});
+
+app.post("/addNote", authenticateToken, async (req, res) => {
+  try {
+    const { note, username, date } = req.body;
+    const newNote = await Bulletin.create({
+      note: note,
+      username: username,
+      date: date,
+    });
+    res.status(200)
+  } catch (error) {
+    throw error;
+  }
+});
+
 // process.env.DATABASE_URL_QA
 // process.env.DATABASE_URL
 mongoose
-  .connect(process.env.DATABASE_URL)
+  .connect(process.env.DATABASE_URL_QA)
   .then(() => {
     app.listen(process.env.PORT || 8000, () => {
       console.log("connected to mongodb");
