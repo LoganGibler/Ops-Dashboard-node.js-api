@@ -13,6 +13,10 @@ const bulletinSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  completed: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const Bulletin = mongoose.model("Bulletin", bulletinSchema);

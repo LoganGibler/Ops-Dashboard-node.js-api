@@ -138,7 +138,7 @@ app.post("/updateTurnover", authenticateToken, async (req, res) => {
   }
 });
 
-app.post("/createTurnover", async (req, res) => {
+app.post("/createTurnover", authenticateToken, async (req, res) => {
   try {
     const { newData, date, username } = req.body;
 
@@ -158,11 +158,8 @@ app.post("/createTurnover", async (req, res) => {
 });
 
 // Bulletin querys
-
-app.post("/Bulletin", authenticateToken, async (req, res) => {
+app.post("/bulletin", authenticateToken, async (req, res) => {
   try {
-    // const { note, username, date } = req.body;
-
     const bulletinBoard = await Bulletin.find({});
     if (bulletinBoard) {
       res.status(200).json({ bulletinBoard });
@@ -184,10 +181,68 @@ app.post("/addNote", authenticateToken, async (req, res) => {
       note: note,
       username: username,
       date: date,
+      completed: false,
     });
-    res.status(200)
+    res.status(200).json({ message: "Note created." });
   } catch (error) {
     throw error;
+  }
+});
+
+app.post("/updateNote", authenticateToken, async (req, res) => {
+  try {
+    const { newData, noteID, username, date } = req.body;
+    const update = { note: newData, username: username, date: date };
+    const filter = { _id: noteID };
+    const updatedNote = await Bulletin.updateOne(filter, update);
+    if (updatedNote) {
+      res.status(200).json({ message: "Note updated successfully" });
+    } else {
+      res.status(500).json({ message: "Note failed to update." });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update note." });
+  }
+});
+
+app.post("/completeNote", authenticateToken, async (req, res) => {
+  try {
+    const { noteID, username, date } = req.body;
+    const update = { completed: true, username: username, date: date };
+    const filter = { _id: noteID };
+    const completedNote = await Bulletin.updateOne(filter, update);
+    if (completedNote) {
+      res.status(200).json({ message: "note completed successfully." });
+    } else {
+      res.status(500).json({ message: "Failed to complete ticket." });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "/completeNote request has failed." });
+  }
+});
+
+app.post("/uncompleteNote", authenticateToken, async (req, res) => {
+  try {
+    const { noteID, username, date } = req.body;
+    const filter = { _id: noteID };
+    const update = { completed: false, username: username, date: date };
+    const updatedNote = await Bulletin.updateOne(filter, update);
+    res.status(200).json({ message: "note updated successfully." });
+  } catch (error) {
+    res.status(500).json({ message: "/uncompleteNote" });
+  }
+});
+
+app.post("/closeNote", authenticateToken, async (req, res) => {
+  try {
+    const { noteID } = req.body;
+    const filter = { _id: noteID };
+    const deletedNote = await Bulletin.deleteOne(filter);
+    res
+      .status(200)
+      .json({ message: "Note successfully deleted.", deletedNote });
+  } catch (error) {
+    res.status(500).json({ message: "/closeNote failed." });
   }
 });
 
