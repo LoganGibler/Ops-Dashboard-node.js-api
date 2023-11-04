@@ -19,6 +19,7 @@ app.use(cors());
 const Users = require("./Schemas/userModel");
 const Turnover = require("./Schemas/turnoverModel");
 const Bulletin = require("./Schemas/bulletinModel");
+const Alerts = require("./Schemas/alertsModel");
 
 // middleware
 async function authenticateToken(req, res, next) {
@@ -243,6 +244,124 @@ app.post("/closeNote", authenticateToken, async (req, res) => {
       .json({ message: "Note successfully deleted.", deletedNote });
   } catch (error) {
     res.status(500).json({ message: "/closeNote failed." });
+  }
+});
+
+// Alert Guides
+// only title and id if guide should be returned
+app.post("/getGuides", authenticateToken, async (req, res) => {
+  try {
+    const guides = await Alerts.find({ published: true });
+    res.status(200).json({ guides });
+  } catch (error) {
+    res.status(500).json({ message: "/getGuides has failed." });
+  }
+});
+
+app.post("/createGuide", authenticateToken, async (req, res) => {
+  try {
+    const newGuide = await Alerts.create(req.body);
+    if (newGuide) {
+      res.status(200).json({ newGuide });
+    } else {
+      res.status(500).json({ message: "/createGuide has failed." });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "/createGuide has failed." });
+  }
+});
+
+app.post("/deleteGuide", authenticateToken, async (req, res) => {
+  try {
+    const filter = { _id: req.body._id };
+    const deletedGuide = await Alerts.deleteOne(filter);
+    if (deletedGuide) {
+      res.status(200).json({ message: "Guide deleted." });
+    } else {
+      res.status(500).json({ message: "/deleteGuide failed" });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "/deleteGuide has failed." });
+  }
+});
+
+app.post("/publishGuide", authenticateToken, async (req, res) => {
+  try {
+    const update = { published: true };
+    const filter = { _id: req.body._id };
+    const editedGuide = await Alerts.updateOne({ filter, update });
+    res.status(200).json({ message: "/publishGuide Successful." });
+  } catch (error) {
+    res.status(500).json({ message: "/publishGuide has failed." });
+  }
+});
+
+app.post("/unpublishGuide", authenticateToken, async (req, res) => {
+  const update = { published: false };
+  const filter = { _id: req.body._id };
+  const editedGuide = await Alerts.updateOne({ filter, update });
+  res.status(200).json({ message: "/unpublishGuide Successful." });
+  try {
+  } catch (error) {
+    res.status(500).json({ message: "/unpublishGuide has failed." });
+  }
+});
+
+app.post("/addstep", authenticateToken, async (req, res) => {
+  try {
+    let newStep = {
+      step: req.body.step,
+    };
+
+    const step = await Alerts.updateOne(
+      { _id: req.body._id },
+      { $push: { steps: newStep } }
+    );
+    if (step) {
+      res.status(200).json({ message: "/addstep successful." });
+    } else {
+      res.status(500).json({ message: "/addstep failed." });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "/addstep has failed." });
+  }
+});
+
+app.post("/removeStep", authenticateToken, async (req, res) => {
+  try {
+    const { _id, index } = req.body;
+    let filter = { _id: _id };
+    let update = {};
+    let editedStep = "steps." + index + ".step";
+    update[editedStep] = null;
+    const editedGuide = await Alerts.findOneAndUpdate(filter, update, {
+      new: true,
+    });
+    if (editedGuide) {
+      res.status(200).json({ message: "/removeStep successful." });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "/removeStep has failed." });
+  }
+});
+
+app.post("/updateStep", authenticateToken, async (req, res) => {
+  const { _id, index, newStepData } = req.body;
+  let filter = { _id: _id };
+  let update = {};
+  let editedStep = "steps." + index + ".step";
+  update[editedStep] = newStepData;
+  const updatedStep = await Alerts.findOneAndUpdate(filter, update, {
+    new: true,
+  });
+  if (updatedStep) {
+    res.status(200).json({ message: "/updateStep successful." });
+  } else {
+    res.status(500).json({ message: "/updateStep failed." });
+  }
+  try {
+  } catch (error) {
+    res.status(500).json({ message: "/createGuide has failed." });
   }
 });
 
