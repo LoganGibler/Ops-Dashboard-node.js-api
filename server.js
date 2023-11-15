@@ -54,6 +54,10 @@ app.post("/protected", authenticateToken, async (req, res) => {
 
 // routes
 
+app.get("/testConnection", async (req,res)=>{
+  res.send("Connected")
+})
+
 app.post("/register", async (req, res) => {
   try {
     const { username, password } = req.body;
