@@ -1,6 +1,7 @@
 // const { Client } = require("pg");
 const express = require("express");
 const mongoose = require("mongoose");
+const cookieParser = require("cookie-parser");
 const app = express();
 const cors = require("cors");
 require("dotenv").config();
@@ -13,50 +14,62 @@ const jwt = require("jsonwebtoken");
 app.enable("trust proxy");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 // app.use(morgan("dev"));
-app.use(cors());
+app.use(cors({
+  credentials: true,
+  // origin: 'http://your-client-origin.com', // Replace with your client's origin
+  origin: "http://localhost:5173"
+}));
 
 const Users = require("./Schemas/userModel");
 const Turnover = require("./Schemas/turnoverModel");
 const Bulletin = require("./Schemas/bulletinModel");
 const Alerts = require("./Schemas/alertsModel");
+const Contacts = require("./Schemas/contactsModel");
 
 // middleware
 async function authenticateToken(req, res, next) {
-  const token = req.headers["authorization"];
-  const username = req.body.username;
-  console.log("Token passed to backend for Auth:", token);
-  console.log("Username passed to backend for Auth:", username);
+  // const token = req.headers["authorization"];
 
-  if (token == null) {
-    return res.sendStatus(401);
-  }
-  console.log("parsed token: ", JSON.parse(token));
-  jwt.verify(JSON.parse(token), process.env.JWT_SECRET, async (err, user) => {
-    if (err) {
-      console.log(err);
-      return res.sendStatus(403);
-    }
-    req.user = user;
-    console.log("decoded token belongs to:", user.username);
-    console.log("username passed with request:", JSON.parse(username));
-    if (user.username !== JSON.parse(username)) {
-      return res.sendStatus(405);
-    }
-    next();
-  });
+  const username = req.body.username;
+
+  const token = req.cookies.session
+  console.log("SHOULD BE TOKEN", token);
+  // console.log("Token passed to backend for Auth:", token);
+  // console.log("THIS IS REQ.cookies.token", req.cookies.session);
+  // console.log("Username passed to backend for Auth:", username);
+
+  // if (token == null) {
+  //   return res.sendStatus(401);
+  // }
+  // // console.log("parsed token: ", JSON.parse(token));
+  // jwt.verify(JSON.parse(token), process.env.JWT_SECRET, async (err, user) => {
+  //   if (err) {
+  //     // console.log(err);
+  //     return res.sendStatus(403);
+  //   }
+  //   req.user = user;
+  //   // console.log("decoded token belongs to:", user.username);
+  //   // console.log("username passed with request:", JSON.parse(username));
+  //   if (user.username !== JSON.parse(username)) {
+  //     return res.sendStatus(405);
+  //   }
+  //   next();
+  // });
 }
 
 app.post("/protected", authenticateToken, async (req, res) => {
   // This route is protected and can only be accessed by authenticated users.
+  console.log("Authenticated.");
   res.send("You are authenticated");
 });
 
 // routes
 
-app.get("/testConnection", async (req,res)=>{
-  res.send("Connected")
-})
+app.get("/testConnection", async (req, res) => {
+  res.send("Connected");
+});
 
 app.post("/register", async (req, res) => {
   try {
@@ -69,14 +82,14 @@ app.post("/register", async (req, res) => {
     }
 
     const hashedPassword = bcrypt.hashSync(password, salt);
-    console.log("Registered generated password:", hashedPassword);
-    console.log("This is the username:", username);
-    console.log("This is the password:", hashedPassword);
+    // console.log("Registered generated password:", hashedPassword);
+    // console.log("This is the username:", username);
+    // console.log("This is the password:", hashedPassword);
     const user = await Users.create({
       username: username,
       password: hashedPassword,
     });
-    console.log("Registered user:", user);
+    // console.log("Registered user:", user);
     res.status(200).json({ message: "User created successfully", user });
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -90,7 +103,7 @@ app.post("/login", async (req, res) => {
   try {
     const user = await Users.findOne({ username: req.body.username });
 
-    console.log("found user: ", user);
+    // console.log("found user: ", user);
 
     if (!user) {
       return res.status(402).json({ message: "Invalid credentials." });
@@ -104,9 +117,11 @@ app.post("/login", async (req, res) => {
         const token = jwt.sign({ username }, jwtsecret, {
           expiresIn: "12h",
         });
-        return res.status(200).json({ message: "Login successful", token });
+        res.cookie("session", token, { httpOnly: true });
+        res.json({ success: true, message: "Login successful" });
+      } else {
+        return res.status(404).json({ message: "Invalid credentials." });
       }
-      return res.status(404).json({ message: "Invalid credentials." });
     });
   } catch (error) {
     res.status(500).json({ message: "Login has failed." });
@@ -143,24 +158,24 @@ app.post("/updateTurnover", authenticateToken, async (req, res) => {
   }
 });
 
-app.post("/createTurnover", authenticateToken, async (req, res) => {
-  try {
-    const { newData, date, username } = req.body;
+// app.post("/createTurnover", authenticateToken, async (req, res) => {
+//   try {
+//     const { newData, date, username } = req.body;
 
-    const updatedData = await Turnover.create({
-      turnover: newData,
-      date: date,
-      username: username,
-      unchanged: true,
-    });
+//     const updatedData = await Turnover.create({
+//       turnover: newData,
+//       date: date,
+//       username: username,
+//       unchanged: true,
+//     });
 
-    if (updatedData) {
-      res.status(200).json({ message: "new Turnover created successfully." });
-    }
-  } catch (error) {
-    res.status(500).json({ message: "/createTurnover request has failed." });
-  }
-});
+//     if (updatedData) {
+//       res.status(200).json({ message: "new Turnover created successfully." });
+//     }
+//   } catch (error) {
+//     res.status(500).json({ message: "/createTurnover request has failed." });
+//   }
+// });
 
 // Bulletin querys
 app.post("/bulletin", authenticateToken, async (req, res) => {
@@ -369,10 +384,57 @@ app.post("/updateStep", authenticateToken, async (req, res) => {
   }
 });
 
+// Contacts querys
+// app.post("/createContacts", async (req, res) => {
+//   const { username, data, date } = req.body;
+
+//   const contactsData = await Contacts.create({
+//     username: username,
+//     contacts: data,
+//     date: date,
+//   });
+
+//   if (contactsData) {
+//     res.status(200).json({ message: "Contact page created." });
+//   } else {
+//     res.status(500).json({ message: "Contact page creation failed" });
+//   }
+// });
+
+app.post("/getContacts", authenticateToken, async (req, res) => {
+  const contactsData = await Contacts.find({});
+  if (contactsData) {
+    res.status(200).json({ contactsData });
+    return;
+  }
+  res
+    .status(500)
+    .json({ message: "No contact page found. Someone deleted the whole doc!" });
+});
+
+app.post("/updateContacts", authenticateToken, async (req, res) => {
+  try {
+    const { username, newData, date } = req.body;
+    const filter = { unchanged: true };
+    const update = { username: username, contacts: newData, date: date };
+    const updatedContacts = await Contacts.updateOne(filter, update);
+    if (updatedContacts) {
+      res.status(200).json({ message: "Contacts updated successfully." });
+      return;
+    }
+    res.status(500).json({
+      message:
+        "Contacts update has failed. Please verify contact data was not deleted.",
+    });
+  } catch (error) {
+    res.status(500).json({ message: "/updateContacts has failed" });
+  }
+});
+
 // process.env.DATABASE_URL_QA
 // process.env.DATABASE_URL
 mongoose
-  .connect(process.env.DATABASE_URL)
+  .connect(process.env.DATABASE_URL_QA)
   .then(() => {
     app.listen(process.env.PORT || 8000, () => {
       console.log("connected to mongodb");
