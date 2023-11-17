@@ -1,7 +1,6 @@
 // const { Client } = require("pg");
 const express = require("express");
 const mongoose = require("mongoose");
-const cookieParser = require("cookie-parser");
 const app = express();
 const cors = require("cors");
 require("dotenv").config();
@@ -10,59 +9,55 @@ const bcrypt = require("bcrypt");
 // const client = new Client(process.env.DATABASE_URL);
 const jwt = require("jsonwebtoken");
 // const morgan = require("morgan");
+const cookieParser = require("cookie-parser");
 
 app.enable("trust proxy");
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 // app.use(morgan("dev"));
-app.use(cors({
-  credentials: true,
-  // origin: 'http://your-client-origin.com', // Replace with your client's origin
-  origin: "http://localhost:5173"
-}));
+app.use(
+  cors({
+    credentials: true,
+    // origin: 'http://your-client-origin.com', // Replace with your client's origin
+    origin: "http://localhost:5173",
+  })
+);
 
 const Users = require("./Schemas/userModel");
 const Turnover = require("./Schemas/turnoverModel");
 const Bulletin = require("./Schemas/bulletinModel");
 const Alerts = require("./Schemas/alertsModel");
 const Contacts = require("./Schemas/contactsModel");
+const Workflows = require("./Schemas/workflowModel");
 
 // middleware
 async function authenticateToken(req, res, next) {
-  // const token = req.headers["authorization"];
+  // Get auth header value
+  const token = req.headers["authorization"];
+  console.log("bearerHeader: ", token);
 
-  const username = req.body.username;
-
-  const token = req.cookies.session
-  console.log("SHOULD BE TOKEN", token);
-  // console.log("Token passed to backend for Auth:", token);
-  // console.log("THIS IS REQ.cookies.token", req.cookies.session);
-  // console.log("Username passed to backend for Auth:", username);
-
-  // if (token == null) {
-  //   return res.sendStatus(401);
-  // }
-  // // console.log("parsed token: ", JSON.parse(token));
-  // jwt.verify(JSON.parse(token), process.env.JWT_SECRET, async (err, user) => {
-  //   if (err) {
-  //     // console.log(err);
-  //     return res.sendStatus(403);
-  //   }
-  //   req.user = user;
-  //   // console.log("decoded token belongs to:", user.username);
-  //   // console.log("username passed with request:", JSON.parse(username));
-  //   if (user.username !== JSON.parse(username)) {
-  //     return res.sendStatus(405);
-  //   }
-  //   next();
-  // });
+  if (typeof token !== "undefined") {
+    jwt.verify(token, process.env.JWT_SECRET, function (err, decodedToken) {
+      if (err) {
+        console.info("token did not work");
+        return res.status(403).send("Error");
+      }
+      console.log(decodedToken, "!!!!!!!!!");
+      req.token = token;
+      req.decodedToken = decodedToken;
+      next();
+    });
+  } else {
+    res.sendStatus(403);
+  }
 }
 
-app.post("/protected", authenticateToken, async (req, res) => {
+app.get("/protected", authenticateToken, async (req, res) => {
   // This route is protected and can only be accessed by authenticated users.
-  console.log("Authenticated.");
-  res.send("You are authenticated");
+
+  res.status(200).json({ auth: true });
+  // res.send("You are authenticated");
 });
 
 // routes
@@ -82,9 +77,6 @@ app.post("/register", async (req, res) => {
     }
 
     const hashedPassword = bcrypt.hashSync(password, salt);
-    // console.log("Registered generated password:", hashedPassword);
-    // console.log("This is the username:", username);
-    // console.log("This is the password:", hashedPassword);
     const user = await Users.create({
       username: username,
       password: hashedPassword,
@@ -98,8 +90,6 @@ app.post("/register", async (req, res) => {
 
 app.post("/login", async (req, res) => {
   let { username, password } = req.body;
-  console.log("username:", username);
-  console.log("password: ", password);
   try {
     const user = await Users.findOne({ username: req.body.username });
 
@@ -115,10 +105,10 @@ app.post("/login", async (req, res) => {
       }
       if (result) {
         const token = jwt.sign({ username }, jwtsecret, {
-          expiresIn: "12h",
+          expiresIn: "2h",
         });
-        res.cookie("session", token, { httpOnly: true });
-        res.json({ success: true, message: "Login successful" });
+        console.log("Generated Token: ", token);
+        return res.cookie("auth", token).json({ token });
       } else {
         return res.status(404).json({ message: "Invalid credentials." });
       }
@@ -126,6 +116,11 @@ app.post("/login", async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Login has failed." });
   }
+});
+
+app.post("/logout", async (req, res) => {
+  res.clearCookie("token");
+  res.status(200).json({ success: true, message: "Logout successful" });
 });
 
 // content
@@ -428,6 +423,38 @@ app.post("/updateContacts", authenticateToken, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: "/updateContacts has failed" });
+  }
+});
+
+// app.post("/createWorkflow", async (req, res) => {
+//   const { username, date, newData } = req.body;
+//   const newWorkflowPage = await Workflows.create({
+//     username: username,
+//     date: date,
+//     workflows: newData,
+//   });
+
+//   res.status(200).json({ newWorkflowPage });
+// });
+
+app.get("/getWorkflows", authenticateToken, async (req, res) => {
+  try {
+    const workflows = await Workflows.findOne({});
+    res.status(200).json({ workflows });
+  } catch (error) {
+    res.status(500).json({ message: "/getWorkflows has failed." });
+  }
+});
+
+app.post("/updateWorkflows", authenticateToken, async (req, res) => {
+  try {
+    const { username, date, newData } = req.body;
+    const filter = { unchanged: true };
+    const update = { workflows: newData, username: username, date: date };
+    const newWorkflows = await Workflows.updateOne(filter, update);
+    res.status(200).json({ message: "Workflows updated successfully" });
+  } catch (error) {
+    res.status(500).json({ message: "/updateWorkflows failed." });
   }
 });
 
