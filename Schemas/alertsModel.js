@@ -13,7 +13,7 @@ const alertSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  alertOrigin: {
+  origin: {
     type: String,
     default: "Misc",
   },
@@ -21,6 +21,10 @@ const alertSchema = new mongoose.Schema({
   published: {
     type: Boolean,
     default: false,
+  },
+  description: {
+    type: String,
+    default: "",
   },
 });
 

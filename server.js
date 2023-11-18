@@ -263,12 +263,22 @@ app.post("/closeNote", authenticateToken, async (req, res) => {
 
 // Alert Guides
 // only title and id if guide should be returned
-app.post("/getGuides", authenticateToken, async (req, res) => {
+app.get("/getGuides", authenticateToken, async (req, res) => {
   try {
     const guides = await Alerts.find({ published: true });
     res.status(200).json({ guides });
   } catch (error) {
     res.status(500).json({ message: "/getGuides has failed." });
+  }
+});
+
+app.post("/getUserGuides", async (req, res) => {
+  try {
+    const filter = { username: req.body.username, published: false };
+    const userGuides = await Alerts.find(filter);
+    res.status(200).json({ userGuides });
+  } catch (error) {
+    res.status(500).json({ message: "/getUserGuides failed." });
   }
 });
 
@@ -303,7 +313,7 @@ app.post("/publishGuide", authenticateToken, async (req, res) => {
   try {
     const update = { published: true };
     const filter = { _id: req.body._id };
-    const editedGuide = await Alerts.updateOne({ filter, update });
+    const editedGuide = await Alerts.updateOne(filter, update);
     res.status(200).json({ message: "/publishGuide Successful." });
   } catch (error) {
     res.status(500).json({ message: "/publishGuide has failed." });
@@ -313,7 +323,7 @@ app.post("/publishGuide", authenticateToken, async (req, res) => {
 app.post("/unpublishGuide", authenticateToken, async (req, res) => {
   const update = { published: false };
   const filter = { _id: req.body._id };
-  const editedGuide = await Alerts.updateOne({ filter, update });
+  const editedGuide = await Alerts.updateOne(filter, update);
   res.status(200).json({ message: "/unpublishGuide Successful." });
   try {
   } catch (error) {
