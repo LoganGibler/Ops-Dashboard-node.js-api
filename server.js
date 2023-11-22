@@ -282,6 +282,16 @@ app.post("/getUserGuides", async (req, res) => {
   }
 });
 
+app.post("/getGuide", authenticateToken, async (req, res) => {
+  try {
+    const filter = { _id: req.body._id };
+    const guide = await Alerts.findOne(filter);
+    res.status(200).json({ guide });
+  } catch (error) {
+    res.status(500).json({ message: "/getGuide has failed" });
+  }
+});
+
 app.post("/createGuide", authenticateToken, async (req, res) => {
   try {
     const newGuide = await Alerts.create(req.body);
@@ -369,7 +379,7 @@ app.post("/removeStep", authenticateToken, async (req, res) => {
   }
 });
 
-app.post("/updateStep", authenticateToken, async (req, res) => {
+app.post("/updateStep", async (req, res) => {
   const { _id, index, newStepData } = req.body;
   let filter = { _id: _id };
   let update = {};
@@ -386,6 +396,17 @@ app.post("/updateStep", authenticateToken, async (req, res) => {
   try {
   } catch (error) {
     res.status(500).json({ message: "/createGuide has failed." });
+  }
+});
+
+app.post("/updateTitle", authenticateToken, async (req, res) => {
+  try {
+    const filter = { _id: req.body._id };
+    const update = { title: req.body.newData };
+    const updatedGuide = await Alerts.updateOne(filter, update);
+    res.status(200).json({ message: "/updatetitle successful." });
+  } catch (error) {
+    res.status(500).json({ message: "failure on /updateTitle" });
   }
 });
 
