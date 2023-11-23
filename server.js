@@ -19,7 +19,7 @@ app.use(cookieParser());
 app.use(
   cors({
     credentials: true,
-    origin: "https://seg-ops-bulletin.netlify.app", // Replace with your client's origin
+    origin: "https://prod--seg-ops-bulletin.netlify.app/", // Replace with your client's origin
     // origin: "http://localhost:5173",
   })
 );
