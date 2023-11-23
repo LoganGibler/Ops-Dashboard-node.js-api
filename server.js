@@ -19,8 +19,8 @@ app.use(cookieParser());
 app.use(
   cors({
     credentials: true,
-    // origin: 'http://your-client-origin.com', // Replace with your client's origin
-    origin: "http://localhost:5173",
+    origin: "https://seg-ops-bulletin.netlify.app", // Replace with your client's origin
+    // origin: "http://localhost:5173",
   })
 );
 
@@ -153,24 +153,24 @@ app.post("/updateTurnover", authenticateToken, async (req, res) => {
   }
 });
 
-// app.post("/createTurnover", authenticateToken, async (req, res) => {
-//   try {
-//     const { newData, date, username } = req.body;
+app.post("/createTurnover", authenticateToken, async (req, res) => {
+  try {
+    const { newData, date, username } = req.body;
 
-//     const updatedData = await Turnover.create({
-//       turnover: newData,
-//       date: date,
-//       username: username,
-//       unchanged: true,
-//     });
+    const updatedData = await Turnover.create({
+      turnover: newData,
+      date: date,
+      username: username,
+      unchanged: true,
+    });
 
-//     if (updatedData) {
-//       res.status(200).json({ message: "new Turnover created successfully." });
-//     }
-//   } catch (error) {
-//     res.status(500).json({ message: "/createTurnover request has failed." });
-//   }
-// });
+    if (updatedData) {
+      res.status(200).json({ message: "new Turnover created successfully." });
+    }
+  } catch (error) {
+    res.status(500).json({ message: "/createTurnover request has failed." });
+  }
+});
 
 // Bulletin querys
 app.post("/bulletin", authenticateToken, async (req, res) => {
@@ -411,21 +411,21 @@ app.post("/updateTitle", authenticateToken, async (req, res) => {
 });
 
 // Contacts querys
-// app.post("/createContacts", async (req, res) => {
-//   const { username, data, date } = req.body;
+app.post("/createContacts", async (req, res) => {
+  const { username, data, date } = req.body;
 
-//   const contactsData = await Contacts.create({
-//     username: username,
-//     contacts: data,
-//     date: date,
-//   });
+  const contactsData = await Contacts.create({
+    username: username,
+    contacts: data,
+    date: date,
+  });
 
-//   if (contactsData) {
-//     res.status(200).json({ message: "Contact page created." });
-//   } else {
-//     res.status(500).json({ message: "Contact page creation failed" });
-//   }
-// });
+  if (contactsData) {
+    res.status(200).json({ message: "Contact page created." });
+  } else {
+    res.status(500).json({ message: "Contact page creation failed" });
+  }
+});
 
 app.post("/getContacts", authenticateToken, async (req, res) => {
   const contactsData = await Contacts.find({});
@@ -457,16 +457,16 @@ app.post("/updateContacts", authenticateToken, async (req, res) => {
   }
 });
 
-// app.post("/createWorkflow", async (req, res) => {
-//   const { username, date, newData } = req.body;
-//   const newWorkflowPage = await Workflows.create({
-//     username: username,
-//     date: date,
-//     workflows: newData,
-//   });
+app.post("/createWorkflow", async (req, res) => {
+  const { username, date, newData } = req.body;
+  const newWorkflowPage = await Workflows.create({
+    username: username,
+    date: date,
+    workflows: newData,
+  });
 
-//   res.status(200).json({ newWorkflowPage });
-// });
+  res.status(200).json({ newWorkflowPage });
+});
 
 app.get("/getWorkflows", authenticateToken, async (req, res) => {
   try {
@@ -492,7 +492,7 @@ app.post("/updateWorkflows", authenticateToken, async (req, res) => {
 // process.env.DATABASE_URL_QA
 // process.env.DATABASE_URL
 mongoose
-  .connect(process.env.DATABASE_URL_QA)
+  .connect(process.env.DATABASE_URL)
   .then(() => {
     app.listen(process.env.PORT || 8000, () => {
       console.log("connected to mongodb");
