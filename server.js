@@ -35,7 +35,7 @@ const Workflows = require("./Schemas/workflowModel");
 async function authenticateToken(req, res, next) {
   // Get auth header value
   const token = req.headers["authorization"];
-  console.log("bearerHeader: ", token);
+  // console.log("bearerHeader: ", token);
 
   if (typeof token !== "undefined") {
     jwt.verify(token, process.env.JWT_SECRET, function (err, decodedToken) {
@@ -43,7 +43,7 @@ async function authenticateToken(req, res, next) {
         console.info("token did not work");
         return res.status(403).send("Error");
       }
-      console.log(decodedToken, "!!!!!!!!!");
+      // console.log(decodedToken, "!!!!!!!!!");
       req.token = token;
       req.decodedToken = decodedToken;
       next();
@@ -411,21 +411,21 @@ app.post("/updateTitle", authenticateToken, async (req, res) => {
 });
 
 // Contacts querys
-app.post("/createContacts", async (req, res) => {
-  const { username, data, date } = req.body;
+// app.post("/createContacts", async (req, res) => {
+//   const { username, data, date } = req.body;
 
-  const contactsData = await Contacts.create({
-    username: username,
-    contacts: data,
-    date: date,
-  });
+//   const contactsData = await Contacts.create({
+//     username: username,
+//     contacts: data,
+//     date: date,
+//   });
 
-  if (contactsData) {
-    res.status(200).json({ message: "Contact page created." });
-  } else {
-    res.status(500).json({ message: "Contact page creation failed" });
-  }
-});
+//   if (contactsData) {
+//     res.status(200).json({ message: "Contact page created." });
+//   } else {
+//     res.status(500).json({ message: "Contact page creation failed" });
+//   }
+// });
 
 app.post("/getContacts", authenticateToken, async (req, res) => {
   const contactsData = await Contacts.find({});
@@ -457,16 +457,16 @@ app.post("/updateContacts", authenticateToken, async (req, res) => {
   }
 });
 
-app.post("/createWorkflow", async (req, res) => {
-  const { username, date, newData } = req.body;
-  const newWorkflowPage = await Workflows.create({
-    username: username,
-    date: date,
-    workflows: newData,
-  });
+// app.post("/createWorkflow", async (req, res) => {
+//   const { username, date, newData } = req.body;
+//   const newWorkflowPage = await Workflows.create({
+//     username: username,
+//     date: date,
+//     workflows: newData,
+//   });
 
-  res.status(200).json({ newWorkflowPage });
-});
+//   res.status(200).json({ newWorkflowPage });
+// });
 
 app.get("/getWorkflows", authenticateToken, async (req, res) => {
   try {
